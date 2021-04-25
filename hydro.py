@@ -12,21 +12,26 @@ topic = "Temp"
 client_id = f'python-mqtt-{random.randint(0, 100)}'
 username = 'rj'
 password = 'Hapkido1!'
+
+# collections for database
 colWaterTemp = ""
 colAmbientTemp = ""
+colPH = ""
+
+# counters for DB send loops
 waterTempCount = 0
 ambientTempCount = 0
+phCount = 0
 
 
 def on_message_Temp(mosq, obj, msg):
     # This callback will only be called for messages with topics that match
     global waterTempCount
-    print(msg.payload.decode())
     temp = msg.payload.decode()
     timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
     timeTime = datetime.datetime.now().strftime("%H:%M:%S")
 
-    if waterTempCount == 5:
+    if waterTempCount == 25:
         waterData = {"date":timeDate, "time":timeTime, "temp": temp}
         x = colWaterTemp.insert_one(waterData)
         waterTempCount = 0
@@ -36,12 +41,11 @@ def on_message_Temp(mosq, obj, msg):
 
 def on_message_ambientTemp(mosq, obj, msg):
     global ambientTempCount
-    print(msg.payload.decode())
     temp = msg.payload.decode()
     timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
     timeTime = datetime.datetime.now().strftime("%H:%M:%S")
 
-    if ambientTempCount == 60:
+    if ambientTempCount == 300:
         ambientData = {"date":timeDate, "time":timeTime, "temp": temp}
         x = colAmbientTemp.insert_one(ambientData)
         ambientTempCount = 0
@@ -49,17 +53,36 @@ def on_message_ambientTemp(mosq, obj, msg):
     else:
         ambientTempCount +=1
 
+def on_message_ph(mosq, obj, msg):
+    global phCount
+    ph = msg.payload.decode()
+    print(ph)
+    timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
+    timeTime = datetime.datetime.now().strftime("%H:%M:%S")
+
+    if phCount == 25:
+        data = {"date":timeDate, "time":timeTime, "ph": ph}
+        x = colPH.insert_one(data)
+        phCount = 0
+        print("PH sent")
+    else:
+        phCount +=1
+
 def mongoConnect ():
     global colWaterTemp
     global colAmbientTemp
+    global colPH
 
     client = pymongo.MongoClient("mongodb+srv://rj:Hapkido1!@cluster0.iiuhn.mongodb.net/HydroData?retryWrites=true&w=majority")
     dblist = client.list_database_names()
     if "HydroData" in dblist:
         print("Found HydroData")
     mydb = client["HydroData"]
+
+    # columns in database
     colWaterTemp = mydb["waterTemp"]
     colAmbientTemp = mydb["ambientTemp"]
+    colPH = mydb["waterPH"]
    
     
 
@@ -85,6 +108,7 @@ def subscribe(client: mqtt_client):
 
     client.subscribe(topic)
     client.subscribe("ambientTemp")
+    client.subscribe("PH")
     client.on_message = on_message
 
 
@@ -92,6 +116,7 @@ def run():
     client = connect_mqtt()
     client.message_callback_add("Temp", on_message_Temp)
     client.message_callback_add("ambientTemp", on_message_ambientTemp)
+    client.message_callback_add("PH", on_message_ph)
     mongoConnect()
     subscribe(client)
     client.loop_forever()

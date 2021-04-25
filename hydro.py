@@ -12,8 +12,10 @@ topic = "Temp"
 client_id = f'python-mqtt-{random.randint(0, 100)}'
 username = 'rj'
 password = 'Hapkido1!'
-mycol = ""
+colWaterTemp = ""
+colAmbientTemp = ""
 waterTempCount = 0
+ambientTempCount = 0
 
 
 def on_message_Temp(mosq, obj, msg):
@@ -26,26 +28,39 @@ def on_message_Temp(mosq, obj, msg):
 
     if waterTempCount == 5:
         waterData = {"date":timeDate, "time":timeTime, "temp": temp}
-        x = mycol.insert_one(waterData)
+        x = colWaterTemp.insert_one(waterData)
         waterTempCount = 0
+        print("Water Temp Sent")
     else:
         waterTempCount +=1
 
 def on_message_ambientTemp(mosq, obj, msg):
-    # This callback will only be called for messages with topics that match
-    
+    global ambientTempCount
     print(msg.payload.decode())
+    temp = msg.payload.decode()
+    timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
+    timeTime = datetime.datetime.now().strftime("%H:%M:%S")
+
+    if ambientTempCount == 60:
+        ambientData = {"date":timeDate, "time":timeTime, "temp": temp}
+        x = colAmbientTemp.insert_one(ambientData)
+        ambientTempCount = 0
+        print("Ambient Temp sent")
+    else:
+        ambientTempCount +=1
 
 def mongoConnect ():
-    global mycol
+    global colWaterTemp
+    global colAmbientTemp
+
     client = pymongo.MongoClient("mongodb+srv://rj:Hapkido1!@cluster0.iiuhn.mongodb.net/HydroData?retryWrites=true&w=majority")
     dblist = client.list_database_names()
     if "HydroData" in dblist:
         print("Found HydroData")
     mydb = client["HydroData"]
-    mycol = mydb["waterTemp"]
-    waterData = { "temp": "66"}
-    x = mycol.insert_one(waterData)
+    colWaterTemp = mydb["waterTemp"]
+    colAmbientTemp = mydb["ambientTemp"]
+   
     
 
 

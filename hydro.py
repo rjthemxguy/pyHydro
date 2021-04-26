@@ -1,6 +1,7 @@
 import random
 import pymongo
 import datetime
+from datetime import timedelta
 
 from paho.mqtt import client as mqtt_client
 
@@ -25,17 +26,26 @@ ambientTempCount = 0
 phCount = 0
 humidityCount = 0
 
+def getTime():
+    utcTime =  datetime.datetime.now()
+    localTime = utcTime - timedelta(hours=7, minutes=0)
+    localTime = localTime.strftime("%H:%M:%S")
+    return localTime
+
+def getDate():
+    utcDate =  datetime.datetime.now()
+    localDate = utcDate - timedelta(hours=7, minutes=0)
+    localDate = localDate.strftime("%Y-%m-%d")
+    return localDate
 
 
 def on_message_Temp(mosq, obj, msg):
     # This callback will only be called for messages with topics that match
     global waterTempCount
     temp = msg.payload.decode()
-    timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
-    timeTime = datetime.datetime.now().strftime("%H:%M:%S")
-
+       
     if waterTempCount == 25:
-        waterData = {"date":timeDate, "time":timeTime, "temp": temp}
+        waterData = {"date":getDate(), "time":getTime(), "temp": temp}
         x = colWaterTemp.insert_one(waterData)
         waterTempCount = 0
         print("Water Temp Sent")
@@ -45,11 +55,9 @@ def on_message_Temp(mosq, obj, msg):
 def on_message_ambientTemp(mosq, obj, msg):
     global ambientTempCount
     temp = msg.payload.decode()
-    timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
-    timeTime = datetime.datetime.now().strftime("%H:%M:%S")
-
+    
     if ambientTempCount == 300:
-        ambientData = {"date":timeDate, "time":timeTime, "temp": temp}
+        ambientData = {"date":getDate(), "time":getTime(), "temp": temp}
         x = colAmbientTemp.insert_one(ambientData)
         ambientTempCount = 0
         print("Ambient Temp sent")
@@ -59,11 +67,10 @@ def on_message_ambientTemp(mosq, obj, msg):
 def on_message_humidity(mosq, obj, msg):
     global humidityCount
     humidity = msg.payload.decode()
-    timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
-    timeTime = datetime.datetime.now().strftime("%H:%M:%S")
+    
 
     if humidityCount == 300:
-        data = {"date":timeDate, "time":timeTime, "humidity": humidity}
+        data = {"date":getDate(), "time":getTime(), "humidity": humidity}
         x = colHumidity.insert_one(data)
         humidityCount = 0
         print("Humidity sent")
@@ -73,12 +80,10 @@ def on_message_humidity(mosq, obj, msg):
 def on_message_ph(mosq, obj, msg):
     global phCount
     ph = msg.payload.decode()
-    print(ph)
-    timeDate = datetime.datetime.now().strftime("%Y-%m-%d")
-    timeTime = datetime.datetime.now().strftime("%H:%M:%S")
-
+    
+   
     if phCount == 25:
-        data = {"date":timeDate, "time":timeTime, "ph": ph}
+        data = {"date":getDate(), "time":getTime(), "ph": ph}
         x = colPH.insert_one(data)
         phCount = 0
         print("PH sent")

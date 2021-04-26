@@ -28,13 +28,13 @@ humidityCount = 0
 
 def getTime():
     utcTime =  datetime.datetime.now()
-    localTime = utcTime - timedelta(hours=7, minutes=0)
+    localTime = utcTime - timedelta(hours=0, minutes=0)
     localTime = localTime.strftime("%H:%M:%S")
     return localTime
 
 def getDate():
     utcDate =  datetime.datetime.now()
-    localDate = utcDate - timedelta(hours=7, minutes=0)
+    localDate = utcDate - timedelta(hours=0, minutes=0)
     localDate = localDate.strftime("%Y-%m-%d")
     return localDate
 
